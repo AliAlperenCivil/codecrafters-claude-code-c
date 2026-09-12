@@ -46,6 +46,10 @@ int main(int argc, char *argv[]) {
     cJSON_AddStringToObject(msg, "content", prompt);
     cJSON_AddItemToArray(messages, msg);
 
+    cJSON *tools = cJSON_AddArrayToObject(req, "tools");
+    
+
+
     char *body = cJSON_PrintUnformatted(req);
     cJSON_Delete(req);
 
