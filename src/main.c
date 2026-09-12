@@ -47,10 +47,25 @@ int main(int argc, char *argv[]) {
     cJSON_AddItemToArray(messages, msg);
 
     cJSON *tools = cJSON_AddArrayToObject(req, "tools");
-    
 
+    cJSON *object = cJSON_CreateObject();
+    cJSON_AddStringToObject(object, "type", "function");
+    cJSON *function = cJSON_AddObjectToObject(object, "function");
+    cJSON_AddStringToObject(function, "name", "Read");
+    cJSON_AddStringToObject(function, "description", "Read and return the contents of a file");
+    cJSON *parameters = cJSON_AddObjectToObject(function, "parameters");
+    cJSON_AddStringToObject(parameters, "type", "object");
+    cJSON *properties = cJSON_AddObjectToObject(parameters, "properties");
+    cJSON *file_path = cJSON_AddObjectToObject(properties, "file_path");
+    cJSON_AddStringToObject(file_path, "type", "string");
+    cJSON_AddStringToObject(file_path, "description", "The path to the file to read");
+    cJSON *required = cJSON_AddArrayToObject(parameters, "required");
+    cJSON_AddItemToArray(required, cJSON_CreateString("file_path"));
+
+    cJSON_AddItemToArray(tools, object);
 
     char *body = cJSON_PrintUnformatted(req);
+    fprintf(stderr, "DEBUG BODY: %s\n", body);
     cJSON_Delete(req);
 
     char url[512];
