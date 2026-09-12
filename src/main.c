@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     cJSON_AddItemToArray(tools, object);
 
     char *body = cJSON_PrintUnformatted(req);
-    fprintf(stderr, "DEBUG BODY: %s\n", body);
+    // fprintf(stderr, "DEBUG BODY: %s\n", body);
     cJSON_Delete(req);
 
     char url[512];
