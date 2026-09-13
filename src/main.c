@@ -65,7 +65,6 @@ int main(int argc, char *argv[]) {
     cJSON_AddItemToArray(tools, object);
 
     char *body = cJSON_PrintUnformatted(req);
-    // fprintf(stderr, "DEBUG BODY: %s\n", body);
     cJSON_Delete(req);
 
     char url[512];
@@ -121,11 +120,27 @@ int main(int argc, char *argv[]) {
     if(tool_calls != NULL){
         cJSON *tool_calls_array = cJSON_GetArrayItem(tool_calls, 0);
         cJSON *function = cJSON_GetObjectItem(tool_calls_array, "function");
+        if(!function) {
+            fprintf(stderr, "No function found in tool call\n");
+            cJSON_Delete(json);
+            return 1;
+        }
         cJSON *name_item = cJSON_GetObjectItem(function, "name");
+        (void)name_item; // parsed but not used yet — will be needed when multiple tools exist 
 
         cJSON *arguments_item = cJSON_GetObjectItem(function,  "arguments");
+        if(!arguments_item || !cJSON_IsString(arguments_item)){
+            fprintf(stderr, "Invalid or missing arguments in tool call\n");
+            cJSON_Delete(json);
+            return 1;
+        }
         const char *arguments = cJSON_GetStringValue(arguments_item);
         cJSON *arguments_parsed = cJSON_Parse(arguments);
+        if(!arguments_parsed){
+            fprintf(stderr, "Failed to parse tool call arguments\n");
+            cJSON_Delete(json);
+            return 1;
+        }
 
         cJSON *file_path_item = cJSON_GetObjectItem(arguments_parsed, "file_path");
 
@@ -145,27 +160,27 @@ int main(int argc, char *argv[]) {
                 long file_size = ftell(file);
                 fseek(file, 0, SEEK_SET);
 
-                char *icerik = malloc(file_size + 1);
-                if (icerik) {
-                    fread(icerik, 1, file_size, file);
-                    icerik[file_size] = '\0';
-                    printf("%s", icerik);
-                    free(icerik);
+                char *file_content = malloc(file_size + 1);
+                if (file_content) {
+                    fread(file_content, 1, file_size, file);
+                    file_content[file_size] = '\0';
+                    printf("%s", file_content);
+                    free(file_content);
                 } else {
                     fprintf(stderr, "Memory allocation failed\n");
                 }
                 fclose(file);
         }
         fprintf(stderr, "Tool calls detected in the response. This indicates that the model is attempting to use a tool.\n");
-    } else {       
+    } else {
+        cJSON *content = cJSON_GetObjectItem(message, "content");
+
         // You can use print statements as follows for debugging, they'll be visible when running tests.
         fprintf(stderr, "Logs from your program will appear here!\n");
 
         // TODO: Uncomment the line below to pass the first stage
         printf("%s", cJSON_GetStringValue(content));
     }
-
-    cJSON *content = cJSON_GetObjectItem(message, "content");
 
     cJSON_Delete(json);
     return 0;
