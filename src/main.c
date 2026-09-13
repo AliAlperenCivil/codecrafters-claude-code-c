@@ -116,13 +116,56 @@ int main(int argc, char *argv[]) {
 
     cJSON *first = cJSON_GetArrayItem(choices, 0);
     cJSON *message = cJSON_GetObjectItem(first, "message");
+
+    cJSON *tool_calls = cJSON_GetObjectItem(message, "tool_calls");
+    if(tool_calls != NULL){
+        cJSON *tool_calls_array = cJSON_GetArrayItem(tool_calls, 0);
+        cJSON *function = cJSON_GetObjectItem(tool_calls_array, "function");
+        cJSON *name_item = cJSON_GetObjectItem(function, "name");
+
+        cJSON *arguments_item = cJSON_GetObjectItem(function,  "arguments");
+        const char *arguments = cJSON_GetStringValue(arguments_item);
+        cJSON *arguments_parsed = cJSON_Parse(arguments);
+
+        cJSON *file_path_item = cJSON_GetObjectItem(arguments_parsed, "file_path");
+
+        if(!file_path_item || !cJSON_IsString(file_path_item)){
+            fprintf(stderr, "Invalid or missing file_path in tool call arguments\n");
+            cJSON_Delete(arguments_parsed);
+            cJSON_Delete(json);
+            return 1;
+        }
+        const char *file_path = file_path_item->valuestring;
+        
+        FILE *file = fopen(file_path, "r");
+        if (!file) {
+            fprintf(stderr, "Failed to open file: %s\n", file_path);
+        } else {
+            fseek(file, 0, SEEK_END);
+                long file_size = ftell(file);
+                fseek(file, 0, SEEK_SET);
+
+                char *icerik = malloc(file_size + 1);
+                if (icerik) {
+                    fread(icerik, 1, file_size, file);
+                    icerik[file_size] = '\0';
+                    printf("%s", icerik);
+                    free(icerik);
+                } else {
+                    fprintf(stderr, "Memory allocation failed\n");
+                }
+                fclose(file);
+        }
+        fprintf(stderr, "Tool calls detected in the response. This indicates that the model is attempting to use a tool.\n");
+    } else {       
+        // You can use print statements as follows for debugging, they'll be visible when running tests.
+        fprintf(stderr, "Logs from your program will appear here!\n");
+
+        // TODO: Uncomment the line below to pass the first stage
+        printf("%s", cJSON_GetStringValue(content));
+    }
+
     cJSON *content = cJSON_GetObjectItem(message, "content");
-
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    fprintf(stderr, "Logs from your program will appear here!\n");
-
-    // TODO: Uncomment the line below to pass the first stage
-    printf("%s", cJSON_GetStringValue(content));
 
     cJSON_Delete(json);
     return 0;
